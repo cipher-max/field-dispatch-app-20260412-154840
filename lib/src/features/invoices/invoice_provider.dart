@@ -1,0 +1,56 @@
+import 'dart:convert';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
+
+import '../../shared/models/invoice.dart';
+
+class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
+  static const _cacheKey = 'invoice_cache_v1';
+  static const _uuid = Uuid();
+
+  @override
+  Future<List<Invoice>> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_cacheKey);
+    if (raw == null || raw.isEmpty) return [];
+    final list = (jsonDecode(raw) as List).cast<Map<String, dynamic>>();
+    return list.map(Invoice.fromMap).toList();
+  }
+
+  Future<void> createInvoice({
+    required String jobId,
+    required String customerName,
+    required int amountCents,
+  }) async {
+    final current = state.asData?.value ?? [];
+    final invoice = Invoice(
+      id: _uuid.v4(),
+      jobId: jobId,
+      customerName: customerName,
+      amountCents: amountCents,
+      status: 'draft',
+      createdAt: DateTime.now(),
+    );
+    final next = [invoice, ...current];
+    state = AsyncData(next);
+    await _write(next);
+  }
+
+  Future<void> markStatus(String invoiceId, String status) async {
+    final current = state.asData?.value ?? [];
+    final next = [
+      for (final i in current) if (i.id == invoiceId) i.copyWith(status: status) else i,
+    ];
+    state = AsyncData(next);
+    await _write(next);
+  }
+
+  Future<void> _write(List<Invoice> invoices) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_cacheKey, jsonEncode(invoices.map((i) => i.toMap()).toList()));
+  }
+}
+
+final invoiceProvider = AsyncNotifierProvider<InvoiceNotifier, List<Invoice>>(InvoiceNotifier.new);
