@@ -38,6 +38,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
   bool needsEtaOnly = false;
   bool needsActionOnly = false;
   bool needsCustomerUpdateOnly = false;
+  bool needsScopeNotesOnly = false;
 
   Color _priorityColor(BuildContext context, String priority) {
     switch (priority) {
@@ -94,6 +95,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
             needsEtaOnly: needsEtaOnly,
             needsActionOnly: needsActionOnly,
             needsCustomerUpdateOnly: needsCustomerUpdateOnly,
+            needsScopeNotesOnly: needsScopeNotesOnly,
           );
           final recentTechnicians = buildRecentTechnicianNames(jobs);
           final unassignedOpenCount = jobs
@@ -109,6 +111,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
           final needsCustomerUpdateCount = jobs
               .where(jobNeedsCustomerUpdate)
               .length;
+          final needsScopeNotesCount = jobs.where(jobNeedsScopeNotes).length;
 
           return RefreshIndicator(
             onRefresh: () =>
@@ -236,6 +239,26 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                   ),
                   const SizedBox(height: 8),
                 ],
+                if (needsScopeNotesCount > 0) ...[
+                  Card(
+                    color: Theme.of(context).colorScheme.secondaryContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.assignment_late_outlined),
+                      title: Text(
+                        '$needsScopeNotesCount active job${needsScopeNotesCount == 1 ? '' : 's'} missing scope notes',
+                      ),
+                      subtitle: const Text(
+                        'Missing details lead to unprepared tech visits and repeat trips.',
+                      ),
+                      trailing: TextButton(
+                        onPressed: () =>
+                            setState(() => needsScopeNotesOnly = true),
+                        child: const Text('Filter'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -291,6 +314,12 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                       selected: needsCustomerUpdateOnly,
                       onSelected: (selected) =>
                           setState(() => needsCustomerUpdateOnly = selected),
+                    ),
+                    FilterChip(
+                      label: const Text('Missing scope notes'),
+                      selected: needsScopeNotesOnly,
+                      onSelected: (selected) =>
+                          setState(() => needsScopeNotesOnly = selected),
                     ),
                   ],
                 ),

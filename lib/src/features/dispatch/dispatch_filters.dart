@@ -10,6 +10,7 @@ List<Job> filterDispatchJobs({
   bool needsEtaOnly = false,
   bool needsActionOnly = false,
   bool needsCustomerUpdateOnly = false,
+  bool needsScopeNotesOnly = false,
 }) {
   final normalized = query.trim().toLowerCase();
 
@@ -37,6 +38,8 @@ List<Job> filterDispatchJobs({
     final matchesNeedsAction = !needsActionOnly || jobNeedsDispatchAction(job);
     final matchesNeedsCustomerUpdate =
         !needsCustomerUpdateOnly || jobNeedsCustomerUpdate(job);
+    final matchesNeedsScopeNotes =
+        !needsScopeNotesOnly || jobNeedsScopeNotes(job);
 
     return matchesQuery &&
         matchesPriority &&
@@ -44,8 +47,14 @@ List<Job> filterDispatchJobs({
         matchesAssignment &&
         matchesEta &&
         matchesNeedsAction &&
-        matchesNeedsCustomerUpdate;
+        matchesNeedsCustomerUpdate &&
+        matchesNeedsScopeNotes;
   }).toList();
+}
+
+bool jobNeedsScopeNotes(Job job) {
+  if (job.status == 'done' || job.status == 'new') return false;
+  return (job.notes ?? '').trim().isEmpty;
 }
 
 bool jobNeedsCustomerUpdate(Job job) {

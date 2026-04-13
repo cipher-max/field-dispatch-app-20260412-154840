@@ -188,4 +188,24 @@ void main() {
     expect(jobNeedsCustomerUpdate(recent), isFalse);
     expect(jobNeedsCustomerUpdate(done), isFalse);
   });
+
+  test('filters jobs missing scope notes', () {
+    final result = filterDispatchJobs(
+      jobs: jobs,
+      query: '',
+      needsScopeNotesOnly: true,
+    );
+
+    expect(result.map((j) => j.id), ['3']);
+  });
+
+  test('jobNeedsScopeNotes excludes new and done jobs', () {
+    final missingScheduledNotes = jobs[2];
+    final missingNewNotes = jobs[0].copyWith(notes: null);
+    final missingDoneNotes = jobs[1].copyWith(status: 'done', notes: null);
+
+    expect(jobNeedsScopeNotes(missingScheduledNotes), isTrue);
+    expect(jobNeedsScopeNotes(missingNewNotes), isFalse);
+    expect(jobNeedsScopeNotes(missingDoneNotes), isFalse);
+  });
 }

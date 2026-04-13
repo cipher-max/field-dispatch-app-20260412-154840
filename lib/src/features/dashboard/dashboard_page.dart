@@ -81,6 +81,7 @@ class DashboardPage extends ConsumerWidget {
               )
               .length;
           final needsCustomerUpdate = jobs.where(jobNeedsCustomerUpdate).length;
+          final needsScopeNotes = jobs.where(jobNeedsScopeNotes).length;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -121,6 +122,10 @@ class DashboardPage extends ConsumerWidget {
                   _MetricCard(
                     label: 'Cust Updates',
                     value: needsCustomerUpdate.toString(),
+                  ),
+                  _MetricCard(
+                    label: 'Scope Notes',
+                    value: needsScopeNotes.toString(),
                   ),
                 ],
               ),
@@ -239,12 +244,29 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
+              if (needsScopeNotes > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.assignment_late_outlined),
+                    title: Text(
+                      '$needsScopeNotes active jobs missing scope notes',
+                    ),
+                    subtitle: const Text(
+                      'Add notes before dispatch to improve first-time fix rate.',
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
               if (unassigned == 0 &&
                   urgent == 0 &&
                   needsEta == 0 &&
                   invoicesPartial == 0 &&
                   pendingSync == 0 &&
-                  needsCustomerUpdate == 0)
+                  needsCustomerUpdate == 0 &&
+                  needsScopeNotes == 0)
                 const Card(
                   child: ListTile(
                     leading: Icon(Icons.check_circle_outline),
