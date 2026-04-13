@@ -161,4 +161,31 @@ void main() {
 
     expect(result, ['Chris', 'Maya', 'Nina']);
   });
+
+  test('filters jobs that need customer update', () {
+    final result = filterDispatchJobs(
+      jobs: [
+        jobs[1],
+        jobs[2].copyWith(etaWindow: '3:00-4:00 PM'),
+      ],
+      query: '',
+      needsCustomerUpdateOnly: true,
+    );
+
+    expect(result.map((j) => j.id), ['2', '3']);
+  });
+
+  test('jobNeedsCustomerUpdate respects recency and completion', () {
+    final stale = jobs[1].copyWith(
+      lastCustomerMessageAt: DateTime.now().subtract(const Duration(hours: 6)),
+    );
+    final recent = jobs[1].copyWith(
+      lastCustomerMessageAt: DateTime.now().subtract(const Duration(hours: 1)),
+    );
+    final done = jobs[1].copyWith(status: 'done');
+
+    expect(jobNeedsCustomerUpdate(stale), isTrue);
+    expect(jobNeedsCustomerUpdate(recent), isFalse);
+    expect(jobNeedsCustomerUpdate(done), isFalse);
+  });
 }

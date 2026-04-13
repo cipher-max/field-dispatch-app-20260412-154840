@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/trades/trade_provider.dart';
 import '../../core/trades/trade_type.dart';
 import '../../shared/widgets/shell_scaffold.dart';
+import '../dispatch/dispatch_filters.dart';
 import '../invoices/invoice_provider.dart';
 import '../jobs/domain/job_status.dart';
 import '../jobs/job_provider.dart';
@@ -79,6 +80,7 @@ class DashboardPage extends ConsumerWidget {
                 (i) => i.documentType == 'invoice' && i.status == 'partial',
               )
               .length;
+          final needsCustomerUpdate = jobs.where(jobNeedsCustomerUpdate).length;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -115,6 +117,10 @@ class DashboardPage extends ConsumerWidget {
                   _MetricCard(
                     label: 'Pending Sync',
                     value: pendingSync.toString(),
+                  ),
+                  _MetricCard(
+                    label: 'Cust Updates',
+                    value: needsCustomerUpdate.toString(),
                   ),
                 ],
               ),
@@ -217,11 +223,28 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
+              if (needsCustomerUpdate > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.mark_chat_unread_outlined),
+                    title: Text(
+                      '$needsCustomerUpdate jobs need customer updates',
+                    ),
+                    subtitle: const Text(
+                      'Send ETA/status updates to reduce no-shows and callbacks.',
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
               if (unassigned == 0 &&
                   urgent == 0 &&
                   needsEta == 0 &&
                   invoicesPartial == 0 &&
-                  pendingSync == 0)
+                  pendingSync == 0 &&
+                  needsCustomerUpdate == 0)
                 const Card(
                   child: ListTile(
                     leading: Icon(Icons.check_circle_outline),

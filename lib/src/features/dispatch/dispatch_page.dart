@@ -37,6 +37,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
   bool unassignedOnly = false;
   bool needsEtaOnly = false;
   bool needsActionOnly = false;
+  bool needsCustomerUpdateOnly = false;
 
   Color _priorityColor(BuildContext context, String priority) {
     switch (priority) {
@@ -92,6 +93,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
             unassignedOnly: unassignedOnly,
             needsEtaOnly: needsEtaOnly,
             needsActionOnly: needsActionOnly,
+            needsCustomerUpdateOnly: needsCustomerUpdateOnly,
           );
           final recentTechnicians = buildRecentTechnicianNames(jobs);
           final unassignedOpenCount = jobs
@@ -104,6 +106,9 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
               .length;
           final needsEtaCount = jobs.where(jobNeedsEta).length;
           final needsActionCount = jobs.where(jobNeedsDispatchAction).length;
+          final needsCustomerUpdateCount = jobs
+              .where(jobNeedsCustomerUpdate)
+              .length;
 
           return RefreshIndicator(
             onRefresh: () =>
@@ -211,6 +216,26 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                   ),
                   const SizedBox(height: 8),
                 ],
+                if (needsCustomerUpdateCount > 0) ...[
+                  Card(
+                    color: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    child: ListTile(
+                      leading: const Icon(Icons.mark_chat_unread_outlined),
+                      title: Text(
+                        '$needsCustomerUpdateCount job${needsCustomerUpdateCount == 1 ? '' : 's'} need customer updates',
+                      ),
+                      subtitle: const Text(
+                        'Scheduled jobs with ETA but no recent customer message.',
+                      ),
+                      trailing: TextButton(
+                        onPressed: () =>
+                            setState(() => needsCustomerUpdateOnly = true),
+                        child: const Text('Filter'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -260,6 +285,12 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                       selected: needsActionOnly,
                       onSelected: (selected) =>
                           setState(() => needsActionOnly = selected),
+                    ),
+                    FilterChip(
+                      label: const Text('Needs customer update'),
+                      selected: needsCustomerUpdateOnly,
+                      onSelected: (selected) =>
+                          setState(() => needsCustomerUpdateOnly = selected),
                     ),
                   ],
                 ),

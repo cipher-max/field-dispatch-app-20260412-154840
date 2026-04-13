@@ -9,6 +9,7 @@ List<Job> filterDispatchJobs({
   bool unassignedOnly = false,
   bool needsEtaOnly = false,
   bool needsActionOnly = false,
+  bool needsCustomerUpdateOnly = false,
 }) {
   final normalized = query.trim().toLowerCase();
 
@@ -34,14 +35,30 @@ List<Job> filterDispatchJobs({
         (job.technicianName == null || job.technicianName!.trim().isEmpty);
     final matchesEta = !needsEtaOnly || jobNeedsEta(job);
     final matchesNeedsAction = !needsActionOnly || jobNeedsDispatchAction(job);
+    final matchesNeedsCustomerUpdate =
+        !needsCustomerUpdateOnly || jobNeedsCustomerUpdate(job);
 
     return matchesQuery &&
         matchesPriority &&
         matchesTechnician &&
         matchesAssignment &&
         matchesEta &&
-        matchesNeedsAction;
+        matchesNeedsAction &&
+        matchesNeedsCustomerUpdate;
   }).toList();
+}
+
+bool jobNeedsCustomerUpdate(Job job) {
+  final isDone = job.status == 'done';
+  if (isDone) return false;
+
+  final hasEta = (job.etaWindow ?? '').trim().isNotEmpty;
+  if (!hasEta) return false;
+
+  final lastUpdate = job.lastCustomerMessageAt;
+  if (lastUpdate == null) return true;
+
+  return DateTime.now().difference(lastUpdate).inHours >= 4;
 }
 
 bool jobNeedsDispatchAction(Job job) {
