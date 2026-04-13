@@ -39,6 +39,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
   bool needsActionOnly = false;
   bool needsCustomerUpdateOnly = false;
   bool needsScopeNotesOnly = false;
+  bool needsConfirmationOnly = false;
 
   Color _priorityColor(BuildContext context, String priority) {
     switch (priority) {
@@ -96,6 +97,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
             needsActionOnly: needsActionOnly,
             needsCustomerUpdateOnly: needsCustomerUpdateOnly,
             needsScopeNotesOnly: needsScopeNotesOnly,
+            needsConfirmationOnly: needsConfirmationOnly,
           );
           final recentTechnicians = buildRecentTechnicianNames(jobs);
           final unassignedOpenCount = jobs
@@ -112,6 +114,9 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
               .where(jobNeedsCustomerUpdate)
               .length;
           final needsScopeNotesCount = jobs.where(jobNeedsScopeNotes).length;
+          final needsConfirmationCount = jobs
+              .where(jobNeedsConfirmation)
+              .length;
 
           return RefreshIndicator(
             onRefresh: () =>
@@ -259,6 +264,26 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                   ),
                   const SizedBox(height: 8),
                 ],
+                if (needsConfirmationCount > 0) ...[
+                  Card(
+                    color: Theme.of(context).colorScheme.primaryContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.phone_in_talk_outlined),
+                      title: Text(
+                        '$needsConfirmationCount scheduled job${needsConfirmationCount == 1 ? '' : 's'} need customer confirmation',
+                      ),
+                      subtitle: const Text(
+                        'Unconfirmed appointments are at higher risk for no-shows.',
+                      ),
+                      trailing: TextButton(
+                        onPressed: () =>
+                            setState(() => needsConfirmationOnly = true),
+                        child: const Text('Filter'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -320,6 +345,12 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                       selected: needsScopeNotesOnly,
                       onSelected: (selected) =>
                           setState(() => needsScopeNotesOnly = selected),
+                    ),
+                    FilterChip(
+                      label: const Text('Needs confirmation'),
+                      selected: needsConfirmationOnly,
+                      onSelected: (selected) =>
+                          setState(() => needsConfirmationOnly = selected),
                     ),
                   ],
                 ),
@@ -405,6 +436,22 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                                           'Photos: ${job.proofPhotoCount ?? job.proofPhotoUrls?.length}',
                                         ),
                                       ),
+                                    if (job.status ==
+                                            JobStatus.scheduled.value &&
+                                        (job.etaWindow ?? '').trim().isNotEmpty)
+                                      Chip(
+                                        avatar: Icon(
+                                          job.customerConfirmedAt == null
+                                              ? Icons.pending_actions_outlined
+                                              : Icons.verified_outlined,
+                                          size: 16,
+                                        ),
+                                        label: Text(
+                                          job.customerConfirmedAt == null
+                                              ? 'Unconfirmed'
+                                              : 'Confirmed',
+                                        ),
+                                      ),
                                     Chip(
                                       avatar: Icon(
                                         pendingJobIds.contains(job.id)
@@ -459,6 +506,22 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                                       icon: const Icon(Icons.sms_outlined),
                                       label: const Text('Update'),
                                     ),
+                                    if (job.status == JobStatus.scheduled.value)
+                                      FilledButton.tonalIcon(
+                                        onPressed: () => _markCustomerConfirmed(
+                                          context,
+                                          ref,
+                                          job,
+                                        ),
+                                        icon: const Icon(
+                                          Icons.check_circle_outline,
+                                        ),
+                                        label: Text(
+                                          job.customerConfirmedAt == null
+                                              ? 'Mark Confirmed'
+                                              : 'Confirmed',
+                                        ),
+                                      ),
                                     PopupMenuButton<DispatchMessageTemplate>(
                                       tooltip: 'Quick customer templates',
                                       onSelected: (template) =>
@@ -572,6 +635,19 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Customer template copied to clipboard')),
+    );
+  }
+
+  Future<void> _markCustomerConfirmed(
+    BuildContext context,
+    WidgetRef ref,
+    Job job,
+  ) async {
+    if (job.customerConfirmedAt != null) return;
+    await ref.read(jobsProvider.notifier).markCustomerConfirmed(job.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Customer confirmation recorded')),
     );
   }
 

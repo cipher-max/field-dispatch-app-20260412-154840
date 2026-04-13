@@ -208,4 +208,31 @@ void main() {
     expect(jobNeedsScopeNotes(missingNewNotes), isFalse);
     expect(jobNeedsScopeNotes(missingDoneNotes), isFalse);
   });
+
+  test('filters jobs needing customer confirmation', () {
+    final withEtaNoConfirmation = jobs[1];
+    final withConfirmation = jobs[1].copyWith(
+      customerConfirmedAt: DateTime.now(),
+    );
+
+    final result = filterDispatchJobs(
+      jobs: [withEtaNoConfirmation, withConfirmation],
+      query: '',
+      needsConfirmationOnly: true,
+    );
+
+    expect(result.map((j) => j.id), ['2']);
+  });
+
+  test('jobNeedsConfirmation only applies to scheduled with ETA', () {
+    expect(jobNeedsConfirmation(jobs[1]), isTrue);
+    expect(jobNeedsConfirmation(jobs[2]), isFalse);
+    expect(jobNeedsConfirmation(jobs[0]), isFalse);
+    expect(
+      jobNeedsConfirmation(
+        jobs[1].copyWith(customerConfirmedAt: DateTime.now()),
+      ),
+      isFalse,
+    );
+  });
 }

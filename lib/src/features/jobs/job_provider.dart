@@ -198,6 +198,30 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     await _writeCache(next);
   }
 
+  Future<void> markCustomerConfirmed(String jobId) async {
+    final repo = ref.read(jobsRepositoryProvider);
+    final now = DateTime.now();
+    final current = state.asData?.value ?? [];
+    final next = [
+      for (final job in current)
+        if (job.id == jobId) job.copyWith(customerConfirmedAt: now) else job,
+    ];
+    state = AsyncData(next);
+    await _writeCache(next);
+
+    try {
+      await repo.updateCustomerConfirmation(jobId: jobId, confirmedAt: now);
+      _setSyncError(null);
+    } catch (_) {
+      await _enqueuePendingAction({
+        'type': 'updateCustomerConfirmation',
+        'jobId': jobId,
+        'confirmedAt': now.toIso8601String(),
+      });
+      _setSyncError('Saved locally. Pending sync actions need retry.');
+    }
+  }
+
   Future<void> createFollowUp({
     required Job source,
     required int daysOut,
@@ -299,6 +323,13 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
             proofPhotoUrls: (action['proofPhotoUrls'] as List?)
                 ?.map((e) => e.toString())
                 .toList(),
+          );
+        } else if (type == 'updateCustomerConfirmation') {
+          await repo.updateCustomerConfirmation(
+            jobId: action['jobId'].toString(),
+            confirmedAt: DateTime.tryParse(
+              (action['confirmedAt'] ?? '').toString(),
+            ),
           );
         }
       } catch (_) {

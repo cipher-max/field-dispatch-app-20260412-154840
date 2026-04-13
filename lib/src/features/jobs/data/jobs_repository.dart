@@ -28,4 +28,9 @@ abstract class JobsRepository {
     int? proofPhotoCount,
     List<String>? proofPhotoUrls,
   });
+
+  Future<void> updateCustomerConfirmation({
+    required String jobId,
+    DateTime? confirmedAt,
+  });
 }

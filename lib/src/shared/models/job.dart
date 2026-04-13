@@ -14,6 +14,7 @@ class Job {
     this.proofPhotoCount,
     this.proofPhotoUrls,
     this.lastCustomerMessageAt,
+    this.customerConfirmedAt,
   });
 
   final String id;
@@ -30,6 +31,7 @@ class Job {
   final int? proofPhotoCount;
   final List<String>? proofPhotoUrls;
   final DateTime? lastCustomerMessageAt;
+  final DateTime? customerConfirmedAt;
 
   factory Job.fromMap(Map<String, dynamic> map) {
     return Job(
@@ -62,6 +64,10 @@ class Job {
         (map['last_customer_message_at'] ?? map['lastCustomerMessageAt'] ?? '')
             .toString(),
       ),
+      customerConfirmedAt: DateTime.tryParse(
+        (map['customer_confirmed_at'] ?? map['customerConfirmedAt'] ?? '')
+            .toString(),
+      ),
     );
   }
 
@@ -81,6 +87,7 @@ class Job {
       'proof_photo_count': proofPhotoCount,
       'proof_photo_urls': proofPhotoUrls,
       'last_customer_message_at': lastCustomerMessageAt?.toIso8601String(),
+      'customer_confirmed_at': customerConfirmedAt?.toIso8601String(),
     };
   }
 
@@ -98,6 +105,7 @@ class Job {
     int? proofPhotoCount,
     List<String>? proofPhotoUrls,
     DateTime? lastCustomerMessageAt,
+    DateTime? customerConfirmedAt,
   }) {
     return Job(
       id: id,
@@ -116,6 +124,7 @@ class Job {
       proofPhotoUrls: proofPhotoUrls ?? this.proofPhotoUrls,
       lastCustomerMessageAt:
           lastCustomerMessageAt ?? this.lastCustomerMessageAt,
+      customerConfirmedAt: customerConfirmedAt ?? this.customerConfirmedAt,
     );
   }
 }

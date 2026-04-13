@@ -80,4 +80,14 @@ class InMemoryJobsRepository implements JobsRepository {
       proofPhotoUrls: proofPhotoUrls,
     );
   }
+
+  @override
+  Future<void> updateCustomerConfirmation({
+    required String jobId,
+    DateTime? confirmedAt,
+  }) async {
+    final index = _jobs.indexWhere((j) => j.id == jobId);
+    if (index == -1) return;
+    _jobs[index] = _jobs[index].copyWith(customerConfirmedAt: confirmedAt);
+  }
 }

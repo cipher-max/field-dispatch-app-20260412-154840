@@ -11,6 +11,7 @@ List<Job> filterDispatchJobs({
   bool needsActionOnly = false,
   bool needsCustomerUpdateOnly = false,
   bool needsScopeNotesOnly = false,
+  bool needsConfirmationOnly = false,
 }) {
   final normalized = query.trim().toLowerCase();
 
@@ -40,6 +41,8 @@ List<Job> filterDispatchJobs({
         !needsCustomerUpdateOnly || jobNeedsCustomerUpdate(job);
     final matchesNeedsScopeNotes =
         !needsScopeNotesOnly || jobNeedsScopeNotes(job);
+    final matchesNeedsConfirmation =
+        !needsConfirmationOnly || jobNeedsConfirmation(job);
 
     return matchesQuery &&
         matchesPriority &&
@@ -48,13 +51,20 @@ List<Job> filterDispatchJobs({
         matchesEta &&
         matchesNeedsAction &&
         matchesNeedsCustomerUpdate &&
-        matchesNeedsScopeNotes;
+        matchesNeedsScopeNotes &&
+        matchesNeedsConfirmation;
   }).toList();
 }
 
 bool jobNeedsScopeNotes(Job job) {
   if (job.status == 'done' || job.status == 'new') return false;
   return (job.notes ?? '').trim().isEmpty;
+}
+
+bool jobNeedsConfirmation(Job job) {
+  if (job.status != 'scheduled') return false;
+  if ((job.etaWindow ?? '').trim().isEmpty) return false;
+  return job.customerConfirmedAt == null;
 }
 
 bool jobNeedsCustomerUpdate(Job job) {

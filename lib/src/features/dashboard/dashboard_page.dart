@@ -82,6 +82,7 @@ class DashboardPage extends ConsumerWidget {
               .length;
           final needsCustomerUpdate = jobs.where(jobNeedsCustomerUpdate).length;
           final needsScopeNotes = jobs.where(jobNeedsScopeNotes).length;
+          final needsConfirmation = jobs.where(jobNeedsConfirmation).length;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -126,6 +127,10 @@ class DashboardPage extends ConsumerWidget {
                   _MetricCard(
                     label: 'Scope Notes',
                     value: needsScopeNotes.toString(),
+                  ),
+                  _MetricCard(
+                    label: 'Unconfirmed',
+                    value: needsConfirmation.toString(),
                   ),
                 ],
               ),
@@ -260,13 +265,30 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
+              if (needsConfirmation > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.phone_in_talk_outlined),
+                    title: Text(
+                      '$needsConfirmation scheduled jobs unconfirmed',
+                    ),
+                    subtitle: const Text(
+                      'Confirm appointments to reduce no-shows.',
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
               if (unassigned == 0 &&
                   urgent == 0 &&
                   needsEta == 0 &&
                   invoicesPartial == 0 &&
                   pendingSync == 0 &&
                   needsCustomerUpdate == 0 &&
-                  needsScopeNotes == 0)
+                  needsScopeNotes == 0 &&
+                  needsConfirmation == 0)
                 const Card(
                   child: ListTile(
                     leading: Icon(Icons.check_circle_outline),

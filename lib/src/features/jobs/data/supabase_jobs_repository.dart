@@ -92,4 +92,19 @@ class SupabaseJobsRepository implements JobsRepository {
       await _client.from('jobs').update({'status': 'done'}).eq('id', jobId);
     }
   }
+
+  @override
+  Future<void> updateCustomerConfirmation({
+    required String jobId,
+    DateTime? confirmedAt,
+  }) async {
+    try {
+      await _client
+          .from('jobs')
+          .update({'customer_confirmed_at': confirmedAt?.toIso8601String()})
+          .eq('id', jobId);
+    } catch (_) {
+      // Keep local confirmation state even if remote schema is not yet updated.
+    }
+  }
 }
