@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/config/app_env.dart';
 import '../../shared/widgets/shell_scaffold.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -7,19 +8,32 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const ShellScaffold(
+    return ShellScaffold(
       title: 'Settings',
       child: Padding(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Environment: Local cache mode (Supabase pending keys)'),
-            SizedBox(height: 8),
-            Text('MVP notes:'),
-            Text('- Plumbing workflow is production-first'),
-            Text('- Electrical/HVAC templates are beta'),
-            Text('- Invoices are local and status-based for now'),
+            const Text('Environment: Local cache mode (Supabase pending keys)'),
+            const SizedBox(height: 8),
+            const Text('Integrations:'),
+            Text(
+              '• Stripe payment links: '
+              '${AppEnv.hasStripeLinkBase ? 'Configured' : 'Missing STRIPE_PAYMENT_LINK_BASE_URL'}',
+            ),
+            Text(
+              '• QuickBooks OAuth app: '
+              '${AppEnv.hasQuickBooksClientId ? 'Configured' : 'Missing QUICKBOOKS_CLIENT_ID'}',
+            ),
+            const SizedBox(height: 8),
+            const Text('MVP notes:'),
+            const Text('- Plumbing workflow is production-first'),
+            const Text('- Electrical/HVAC templates are beta'),
+            const Text(
+              '- Invoices support estimate/invoice + partial payments',
+            ),
+            const Text('- QuickBooks CSV export works now (share sheet)'),
           ],
         ),
       ),

@@ -6,6 +6,7 @@ class Invoice {
     required this.amountCents,
     this.amountPaidCents = 0,
     this.documentType = 'invoice',
+    this.paymentLinkUrl,
     required this.status,
     required this.createdAt,
     this.updatedAt,
@@ -17,6 +18,7 @@ class Invoice {
   final int amountCents;
   final int amountPaidCents;
   final String documentType; // estimate, invoice
+  final String? paymentLinkUrl;
   final String status; // draft, sent, approved, declined, partial, paid
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -35,6 +37,8 @@ class Invoice {
           (map['amount_paid_cents'] ?? map['amountPaidCents'] ?? 0) as int,
       documentType: (map['document_type'] ?? map['documentType'] ?? 'invoice')
           .toString(),
+      paymentLinkUrl: (map['payment_link_url'] ?? map['paymentLinkUrl'])
+          ?.toString(),
       status: (map['status'] ?? 'draft').toString(),
       createdAt:
           DateTime.tryParse(
@@ -55,6 +59,7 @@ class Invoice {
       'amount_cents': amountCents,
       'amount_paid_cents': amountPaidCents,
       'document_type': documentType,
+      'payment_link_url': paymentLinkUrl,
       'status': status,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -66,6 +71,7 @@ class Invoice {
     int? amountCents,
     int? amountPaidCents,
     String? documentType,
+    String? paymentLinkUrl,
     DateTime? updatedAt,
   }) {
     return Invoice(
@@ -75,6 +81,7 @@ class Invoice {
       amountCents: amountCents ?? this.amountCents,
       amountPaidCents: amountPaidCents ?? this.amountPaidCents,
       documentType: documentType ?? this.documentType,
+      paymentLinkUrl: paymentLinkUrl ?? this.paymentLinkUrl,
       status: status ?? this.status,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

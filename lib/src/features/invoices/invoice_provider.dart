@@ -130,6 +130,26 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
     await _write(next);
   }
 
+  Future<void> attachPaymentLink({
+    required String invoiceId,
+    required String paymentLinkUrl,
+  }) async {
+    final current = state.asData?.value ?? [];
+    final next = [
+      for (final i in current)
+        if (i.id == invoiceId)
+          i.copyWith(
+            paymentLinkUrl: paymentLinkUrl,
+            status: i.status == 'draft' ? 'sent' : i.status,
+            updatedAt: DateTime.now(),
+          )
+        else
+          i,
+    ];
+    state = AsyncData(next);
+    await _write(next);
+  }
+
   Future<void> _write(List<Invoice> invoices) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(

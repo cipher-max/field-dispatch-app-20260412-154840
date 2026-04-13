@@ -1,14 +1,22 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../shared/models/invoice.dart';
 import '../../shared/widgets/shell_scaffold.dart';
+import '../../core/config/app_env.dart';
 import '../jobs/domain/job_status.dart';
 import '../jobs/job_provider.dart';
 import 'invoice_provider.dart';
+import 'quickbooks_export_service.dart';
+import 'stripe_payment_link_service.dart';
 
 class InvoicesPage extends ConsumerWidget {
   const InvoicesPage({super.key});
+
+  static final _stripeLinks = StripePaymentLinkService();
+  static final _quickBooks = QuickBooksExportService();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -61,6 +69,26 @@ class InvoicesPage extends ConsumerWidget {
                     icon: Icons.pending_actions_outlined,
                   ),
                 ],
+              ),
+              const SizedBox(height: 12),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.hub_outlined),
+                  title: const Text('Integrations readiness'),
+                  subtitle: Text(
+                    'Stripe links: ${AppEnv.hasStripeLinkBase ? 'configured' : 'not configured'} • QuickBooks app: ${AppEnv.hasQuickBooksClientId ? 'configured' : 'not configured'}',
+                  ),
+                  trailing: OutlinedButton.icon(
+                    onPressed:
+                        invoices
+                            .where((i) => i.documentType == 'invoice')
+                            .isEmpty
+                        ? null
+                        : () => _exportQuickBooks(context, invoices),
+                    icon: const Icon(Icons.upload_file_outlined),
+                    label: const Text('Export QB CSV'),
+                  ),
+                ),
               ),
               const SizedBox(height: 20),
               Text(
@@ -159,7 +187,7 @@ class InvoicesPage extends ConsumerWidget {
                         '${inv.customerName} • ${inv.documentType.toUpperCase()}',
                       ),
                       subtitle: Text(
-                        'Total: ${_usd(inv.amountCents)} • Paid: ${_usd(inv.amountPaidCents)} • Due: ${_usd(inv.amountDueCents)}\n${inv.status.toUpperCase()}',
+                        'Total: ${_usd(inv.amountCents)} • Paid: ${_usd(inv.amountPaidCents)} • Due: ${_usd(inv.amountDueCents)}\n${inv.status.toUpperCase()}${inv.paymentLinkUrl != null ? ' • LINK READY' : ''}',
                       ),
                       isThreeLine: true,
                       trailing: PopupMenuButton<String>(
@@ -203,6 +231,14 @@ class InvoicesPage extends ConsumerWidget {
                             PopupMenuItem(
                               value: 'payment',
                               child: Text('Record Payment'),
+                            ),
+                            PopupMenuItem(
+                              value: 'payment_link',
+                              child: Text('Generate Payment Link'),
+                            ),
+                            PopupMenuItem(
+                              value: 'copy_link',
+                              child: Text('Copy Payment Link'),
                             ),
                           ];
                         },
@@ -361,7 +397,66 @@ class InvoicesPage extends ConsumerWidget {
       return;
     }
 
+    if (action == 'payment_link') {
+      final link = _stripeLinks.buildPaymentLink(invoice);
+      if (link == null) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Set STRIPE_PAYMENT_LINK_BASE_URL to enable link generation.',
+            ),
+          ),
+        );
+        return;
+      }
+
+      await ref
+          .read(invoiceProvider.notifier)
+          .attachPaymentLink(invoiceId: invoice.id, paymentLinkUrl: link);
+      if (!context.mounted) return;
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Payment link generated and copied')),
+      );
+      return;
+    }
+
+    if (action == 'copy_link') {
+      final link = invoice.paymentLinkUrl;
+      if (link == null || link.isEmpty) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No payment link yet for this invoice.'),
+          ),
+        );
+        return;
+      }
+      await Clipboard.setData(ClipboardData(text: link));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Payment link copied')));
+      return;
+    }
+
     await ref.read(invoiceProvider.notifier).markStatus(invoice.id, action);
+  }
+
+  Future<void> _exportQuickBooks(
+    BuildContext context,
+    List<Invoice> docs,
+  ) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final path = await _quickBooks.exportInvoicesCsv(docs);
+    await SharePlus.instance.share(
+      ShareParams(text: 'QuickBooks invoice export CSV', files: [XFile(path)]),
+    );
+    messenger.showSnackBar(
+      const SnackBar(content: Text('QuickBooks CSV exported to share sheet')),
+    );
   }
 }
 

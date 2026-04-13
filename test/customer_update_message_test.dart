@@ -79,4 +79,27 @@ void main() {
       'Hi West Clinic, Sam has completed your Filter Replacement. Reply here if you need anything else.',
     );
   });
+
+  test('builds delayed template message', () {
+    final job = Job(
+      id: '4',
+      customerName: 'Maple Office',
+      address: '9 Pine St',
+      jobType: 'Boiler Check',
+      status: 'scheduled',
+      priority: 'high',
+      technicianName: 'Alex',
+      etaWindow: '4:30 PM',
+    );
+
+    final message = buildCustomerUpdateTemplateMessage(
+      job,
+      DispatchMessageTemplate.delayed,
+    );
+
+    expect(
+      message,
+      'Hi Maple Office, quick update: we are running behind for your Boiler Check. New ETA: 4:30 PM. Thanks for your patience.',
+    );
+  });
 }
