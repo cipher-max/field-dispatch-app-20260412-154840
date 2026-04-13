@@ -49,6 +49,9 @@ class InvoicesPage extends ConsumerWidget {
           final collectionQueue =
               invoices.where(invoiceNeedsCollectionFollowUp).toList()
                 ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
+          final estimateFollowUpQueue =
+              invoices.where(estimateNeedsFollowUp).toList()
+                ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -94,6 +97,37 @@ class InvoicesPage extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              Text(
+                'Estimate follow-up',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              if (estimateFollowUpQueue.isEmpty)
+                const Card(
+                  child: ListTile(
+                    leading: Icon(Icons.check_circle_outline),
+                    title: Text('No stale estimates awaiting follow-up'),
+                  ),
+                )
+              else
+                ...estimateFollowUpQueue.map(
+                  (inv) => Card(
+                    color: Theme.of(context).colorScheme.tertiaryContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.request_page_outlined),
+                      title: Text(inv.customerName),
+                      subtitle: Text(
+                        'Estimate: ${_usd(inv.amountCents)} • Age: ${invoiceAgeDays(inv)}d • Status: ${inv.status.toUpperCase()}',
+                      ),
+                      trailing: FilledButton.tonalIcon(
+                        onPressed: () => _copyEstimateFollowUp(context, inv),
+                        icon: const Icon(Icons.content_copy_outlined),
+                        label: const Text('Copy follow-up'),
+                      ),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 20),
               Text(
                 'Collection follow-up',
@@ -505,6 +539,19 @@ class InvoicesPage extends ConsumerWidget {
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Reminder message copied')));
+  }
+
+  Future<void> _copyEstimateFollowUp(
+    BuildContext context,
+    Invoice estimate,
+  ) async {
+    final message =
+        'Hi ${estimate.customerName}, checking in on estimate ${estimate.id} for ${_usd(estimate.amountCents)}. Happy to answer any questions and get your job scheduled.';
+    await Clipboard.setData(ClipboardData(text: message));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Estimate follow-up copied')));
   }
 }
 

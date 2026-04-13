@@ -15,3 +15,12 @@ int invoiceAgeDays(Invoice invoice, {DateTime? now}) {
   final effectiveNow = now ?? DateTime.now();
   return effectiveNow.difference(invoice.createdAt).inDays;
 }
+
+bool estimateNeedsFollowUp(Invoice doc, {DateTime? now}) {
+  if (doc.documentType != 'estimate') return false;
+  if (doc.status == 'approved' || doc.status == 'declined') return false;
+
+  final effectiveNow = now ?? DateTime.now();
+  final ageDays = effectiveNow.difference(doc.createdAt).inDays;
+  return ageDays >= 2;
+}
