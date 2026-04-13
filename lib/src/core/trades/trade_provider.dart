@@ -10,9 +10,10 @@ class SelectedTradeNotifier extends Notifier<TradeType?> {
   void setTrade(TradeType trade) => state = trade;
 }
 
-final selectedTradeProvider = NotifierProvider<SelectedTradeNotifier, TradeType?>(
-  SelectedTradeNotifier.new,
-);
+final selectedTradeProvider =
+    NotifierProvider<SelectedTradeNotifier, TradeType?>(
+      SelectedTradeNotifier.new,
+    );
 
 final selectedWorkflowProvider = Provider<TradeWorkflow?>((ref) {
   final trade = ref.watch(selectedTradeProvider);

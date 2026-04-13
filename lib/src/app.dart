@@ -15,11 +15,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     routes: [
       GoRoute(path: '/', builder: (context, state) => const DashboardPage()),
       GoRoute(path: '/jobs', builder: (context, state) => const JobsPage()),
-      GoRoute(path: '/dispatch', builder: (context, state) => const DispatchPage()),
-      GoRoute(path: '/customers', builder: (context, state) => const CustomersPage()),
-      GoRoute(path: '/invoices', builder: (context, state) => const InvoicesPage()),
-      GoRoute(path: '/settings', builder: (context, state) => const SettingsPage()),
-      GoRoute(path: '/onboarding', builder: (context, state) => const OnboardingPage()),
+      GoRoute(
+        path: '/dispatch',
+        builder: (context, state) => const DispatchPage(),
+      ),
+      GoRoute(
+        path: '/customers',
+        builder: (context, state) => const CustomersPage(),
+      ),
+      GoRoute(
+        path: '/invoices',
+        builder: (context, state) => const InvoicesPage(),
+      ),
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsPage(),
+      ),
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingPage(),
+      ),
     ],
   );
 });
@@ -33,10 +48,7 @@ class FieldDispatchApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Field Dispatch',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.indigo,
-      ),
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.indigo),
       routerConfig: router,
     );
   }

@@ -20,33 +20,57 @@ class InvoicesPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Invoice error: $e')),
         data: (invoices) {
-          final completedJobs = jobsAsync.asData?.value
+          final completedJobs =
+              jobsAsync.asData?.value
                   .where((j) => j.status == JobStatus.done.value)
                   .toList() ??
               [];
 
+          final invoiceByJobId = {for (final inv in invoices) inv.jobId: inv};
+
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              Text('Create invoice from completed jobs', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Create invoice from completed jobs',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               if (completedJobs.isEmpty)
-                const Card(child: ListTile(title: Text('No completed jobs yet')))
+                const Card(
+                  child: ListTile(title: Text('No completed jobs yet')),
+                )
               else
-                ...completedJobs.map(
-                  (job) => Card(
+                ...completedJobs.map((job) {
+                  final existing = invoiceByJobId[job.id];
+                  return Card(
                     child: ListTile(
                       title: Text('${job.customerName} • ${job.jobType}'),
-                      subtitle: Text(job.address),
+                      subtitle: Text(
+                        existing == null
+                            ? job.address
+                            : '${job.address}\nInvoice: ${existing.status.toUpperCase()} • \$${(existing.amountCents / 100).toStringAsFixed(2)}',
+                      ),
+                      isThreeLine: existing != null,
                       trailing: FilledButton(
-                        onPressed: () => _createInvoiceDialog(context, ref, job.id, job.customerName),
-                        child: const Text('Invoice'),
+                        onPressed: existing != null
+                            ? null
+                            : () => _createInvoiceDialog(
+                                context,
+                                ref,
+                                job.id,
+                                job.customerName,
+                              ),
+                        child: Text(existing == null ? 'Invoice' : 'Invoiced'),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                }),
               const SizedBox(height: 20),
-              Text('Invoices (${invoices.length})', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Invoices (${invoices.length})',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               if (invoices.isEmpty)
                 const Card(child: ListTile(title: Text('No invoices yet')))
@@ -55,13 +79,26 @@ class InvoicesPage extends ConsumerWidget {
                   (inv) => Card(
                     child: ListTile(
                       title: Text(inv.customerName),
-                      subtitle: Text('Amount: \$${(inv.amountCents / 100).toStringAsFixed(2)} • ${inv.status.toUpperCase()}'),
+                      subtitle: Text(
+                        'Amount: \$${(inv.amountCents / 100).toStringAsFixed(2)} • ${inv.status.toUpperCase()}',
+                      ),
                       trailing: PopupMenuButton<String>(
-                        onSelected: (value) => ref.read(invoiceProvider.notifier).markStatus(inv.id, value),
+                        onSelected: (value) => ref
+                            .read(invoiceProvider.notifier)
+                            .markStatus(inv.id, value),
                         itemBuilder: (_) => const [
-                          PopupMenuItem(value: 'draft', child: Text('Mark Draft')),
-                          PopupMenuItem(value: 'sent', child: Text('Mark Sent')),
-                          PopupMenuItem(value: 'paid', child: Text('Mark Paid')),
+                          PopupMenuItem(
+                            value: 'draft',
+                            child: Text('Mark Draft'),
+                          ),
+                          PopupMenuItem(
+                            value: 'sent',
+                            child: Text('Mark Sent'),
+                          ),
+                          PopupMenuItem(
+                            value: 'paid',
+                            child: Text('Mark Paid'),
+                          ),
                         ],
                       ),
                     ),
@@ -92,17 +129,29 @@ class InvoicesPage extends ConsumerWidget {
           decoration: const InputDecoration(labelText: 'Amount (USD)'),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
           FilledButton(
             onPressed: () async {
               final parsed = double.tryParse(amountCtrl.text.trim());
               if (parsed == null || parsed <= 0) return;
-              await ref.read(invoiceProvider.notifier).createInvoice(
-                    jobId: jobId,
-                    customerName: customerName,
-                    amountCents: (parsed * 100).round(),
-                  );
-              if (context.mounted) Navigator.pop(context);
+              try {
+                await ref
+                    .read(invoiceProvider.notifier)
+                    .createInvoice(
+                      jobId: jobId,
+                      customerName: customerName,
+                      amountCents: (parsed * 100).round(),
+                    );
+                if (context.mounted) Navigator.pop(context);
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
             },
             child: const Text('Create'),
           ),

@@ -5,12 +5,16 @@ List<Job> filterDispatchJobs({
   required List<Job> jobs,
   required String query,
   JobPriority? priorityFilter,
+  String? technicianFilter,
   bool unassignedOnly = false,
+  bool needsEtaOnly = false,
+  bool needsActionOnly = false,
 }) {
   final normalized = query.trim().toLowerCase();
 
   return jobs.where((job) {
-    final matchesQuery = normalized.isEmpty ||
+    final matchesQuery =
+        normalized.isEmpty ||
         [
           job.customerName,
           job.address,
@@ -21,17 +25,42 @@ List<Job> filterDispatchJobs({
 
     final matchesPriority =
         priorityFilter == null || job.priority == priorityFilter.value;
+    final matchesTechnician =
+        technicianFilter == null ||
+        (job.technicianName ?? '').trim().toLowerCase() ==
+            technicianFilter.trim().toLowerCase();
     final matchesAssignment =
-        !unassignedOnly || (job.technicianName == null || job.technicianName!.trim().isEmpty);
+        !unassignedOnly ||
+        (job.technicianName == null || job.technicianName!.trim().isEmpty);
+    final matchesEta = !needsEtaOnly || jobNeedsEta(job);
+    final matchesNeedsAction = !needsActionOnly || jobNeedsDispatchAction(job);
 
-    return matchesQuery && matchesPriority && matchesAssignment;
+    return matchesQuery &&
+        matchesPriority &&
+        matchesTechnician &&
+        matchesAssignment &&
+        matchesEta &&
+        matchesNeedsAction;
   }).toList();
 }
 
-List<String> buildRecentTechnicianNames(
-  List<Job> jobs, {
-  int limit = 6,
-}) {
+bool jobNeedsDispatchAction(Job job) {
+  final isDone = job.status == 'done';
+  if (isDone) return false;
+
+  final isUnassigned = (job.technicianName ?? '').trim().isEmpty;
+  return isUnassigned || jobNeedsEta(job);
+}
+
+bool jobNeedsEta(Job job) {
+  final hasTechnician = (job.technicianName ?? '').trim().isNotEmpty;
+  final hasEta = (job.etaWindow ?? '').trim().isNotEmpty;
+  final isDone = job.status == 'done';
+
+  return hasTechnician && !hasEta && !isDone;
+}
+
+List<String> buildRecentTechnicianNames(List<Job> jobs, {int limit = 6}) {
   final seen = <String>{};
   final names = <String>[];
 

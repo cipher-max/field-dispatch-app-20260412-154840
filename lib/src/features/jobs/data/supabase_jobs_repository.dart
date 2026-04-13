@@ -15,7 +15,10 @@ class SupabaseJobsRepository implements JobsRepository {
         .select()
         .order('created_at', ascending: false);
 
-    return (rows as List).cast<Map<String, dynamic>>().map(Job.fromMap).toList();
+    return (rows as List)
+        .cast<Map<String, dynamic>>()
+        .map(Job.fromMap)
+        .toList();
   }
 
   @override
@@ -47,7 +50,10 @@ class SupabaseJobsRepository implements JobsRepository {
   }
 
   @override
-  Future<void> updateStatus({required String jobId, required String status}) async {
+  Future<void> updateStatus({
+    required String jobId,
+    required String status,
+  }) async {
     await _client.from('jobs').update({'status': status}).eq('id', jobId);
   }
 
@@ -57,9 +63,33 @@ class SupabaseJobsRepository implements JobsRepository {
     String? technicianName,
     String? etaWindow,
   }) async {
-    await _client.from('jobs').update({
-      'technician_name': technicianName,
-      'eta_window': etaWindow,
-    }).eq('id', jobId);
+    await _client
+        .from('jobs')
+        .update({'technician_name': technicianName, 'eta_window': etaWindow})
+        .eq('id', jobId);
+  }
+
+  @override
+  Future<void> updateCompletion({
+    required String jobId,
+    required String completionNotes,
+    String? customerSignatureName,
+    int? proofPhotoCount,
+    List<String>? proofPhotoUrls,
+  }) async {
+    try {
+      await _client
+          .from('jobs')
+          .update({
+            'status': 'done',
+            'completion_notes': completionNotes,
+            'customer_signature_name': customerSignatureName,
+            'proof_photo_count': proofPhotoCount,
+            'proof_photo_urls': proofPhotoUrls,
+          })
+          .eq('id', jobId);
+    } catch (_) {
+      await _client.from('jobs').update({'status': 'done'}).eq('id', jobId);
+    }
   }
 }

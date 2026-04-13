@@ -25,6 +25,11 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
     required int amountCents,
   }) async {
     final current = state.asData?.value ?? [];
+    final alreadyExists = current.any((i) => i.jobId == jobId);
+    if (alreadyExists) {
+      throw StateError('Invoice already exists for this job.');
+    }
+
     final invoice = Invoice(
       id: _uuid.v4(),
       jobId: jobId,
@@ -41,7 +46,8 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
   Future<void> markStatus(String invoiceId, String status) async {
     final current = state.asData?.value ?? [];
     final next = [
-      for (final i in current) if (i.id == invoiceId) i.copyWith(status: status) else i,
+      for (final i in current)
+        if (i.id == invoiceId) i.copyWith(status: status) else i,
     ];
     state = AsyncData(next);
     await _write(next);
@@ -49,8 +55,13 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
 
   Future<void> _write(List<Invoice> invoices) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_cacheKey, jsonEncode(invoices.map((i) => i.toMap()).toList()));
+    await prefs.setString(
+      _cacheKey,
+      jsonEncode(invoices.map((i) => i.toMap()).toList()),
+    );
   }
 }
 
-final invoiceProvider = AsyncNotifierProvider<InvoiceNotifier, List<Invoice>>(InvoiceNotifier.new);
+final invoiceProvider = AsyncNotifierProvider<InvoiceNotifier, List<Invoice>>(
+  InvoiceNotifier.new,
+);

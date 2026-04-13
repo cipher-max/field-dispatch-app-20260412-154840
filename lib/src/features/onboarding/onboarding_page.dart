@@ -18,7 +18,9 @@ class OnboardingPage extends ConsumerWidget {
           return Card(
             child: ListTile(
               title: Text(trade.label),
-              subtitle: Text(trade.isBeta ? 'Beta template' : 'Production-ready template'),
+              subtitle: Text(
+                trade.isBeta ? 'Beta template' : 'Production-ready template',
+              ),
               trailing: const Icon(Icons.chevron_right),
               onTap: () {
                 ref.read(selectedTradeProvider.notifier).setTrade(trade);

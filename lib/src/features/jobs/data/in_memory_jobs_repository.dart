@@ -39,7 +39,10 @@ class InMemoryJobsRepository implements JobsRepository {
   }
 
   @override
-  Future<void> updateStatus({required String jobId, required String status}) async {
+  Future<void> updateStatus({
+    required String jobId,
+    required String status,
+  }) async {
     final index = _jobs.indexWhere((j) => j.id == jobId);
     if (index == -1) return;
     _jobs[index] = _jobs[index].copyWith(status: status);
@@ -56,6 +59,25 @@ class InMemoryJobsRepository implements JobsRepository {
     _jobs[index] = _jobs[index].copyWith(
       technicianName: technicianName,
       etaWindow: etaWindow,
+    );
+  }
+
+  @override
+  Future<void> updateCompletion({
+    required String jobId,
+    required String completionNotes,
+    String? customerSignatureName,
+    int? proofPhotoCount,
+    List<String>? proofPhotoUrls,
+  }) async {
+    final index = _jobs.indexWhere((j) => j.id == jobId);
+    if (index == -1) return;
+    _jobs[index] = _jobs[index].copyWith(
+      status: JobStatus.done.value,
+      completionNotes: completionNotes,
+      customerSignatureName: customerSignatureName,
+      proofPhotoCount: proofPhotoCount,
+      proofPhotoUrls: proofPhotoUrls,
     );
   }
 }

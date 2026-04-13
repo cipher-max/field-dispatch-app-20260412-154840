@@ -14,7 +14,9 @@ List<Job> filterAndSortJobs({
     final matchesQueue = switch (queueFilter) {
       JobQueueFilter.all => true,
       JobQueueFilter.open => job.status != 'done',
-      JobQueueFilter.unassigned => (job.technicianName == null || job.technicianName!.trim().isEmpty) && job.status != 'done',
+      JobQueueFilter.unassigned =>
+        (job.technicianName == null || job.technicianName!.trim().isEmpty) &&
+            job.status != 'done',
       JobQueueFilter.done => job.status == 'done',
     };
 
@@ -33,9 +35,9 @@ List<Job> filterAndSortJobs({
   }).toList();
 
   filtered.sort((a, b) {
-    final priorityCompare = JobPriorityX.fromValue(b.priority).rank.compareTo(
-      JobPriorityX.fromValue(a.priority).rank,
-    );
+    final priorityCompare = JobPriorityX.fromValue(
+      b.priority,
+    ).rank.compareTo(JobPriorityX.fromValue(a.priority).rank);
     if (priorityCompare != 0) return priorityCompare;
 
     return a.customerName.toLowerCase().compareTo(b.customerName.toLowerCase());

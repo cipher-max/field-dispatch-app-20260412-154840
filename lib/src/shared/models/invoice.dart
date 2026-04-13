@@ -19,10 +19,15 @@ class Invoice {
     return Invoice(
       id: (map['id'] ?? '').toString(),
       jobId: (map['job_id'] ?? map['jobId'] ?? '').toString(),
-      customerName: (map['customer_name'] ?? map['customerName'] ?? '').toString(),
+      customerName: (map['customer_name'] ?? map['customerName'] ?? '')
+          .toString(),
       amountCents: (map['amount_cents'] ?? map['amountCents'] ?? 0) as int,
       status: (map['status'] ?? 'draft').toString(),
-      createdAt: DateTime.tryParse((map['created_at'] ?? map['createdAt'] ?? '').toString()) ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse(
+            (map['created_at'] ?? map['createdAt'] ?? '').toString(),
+          ) ??
+          DateTime.now(),
     );
   }
 
@@ -37,10 +42,7 @@ class Invoice {
     };
   }
 
-  Invoice copyWith({
-    String? status,
-    int? amountCents,
-  }) {
+  Invoice copyWith({String? status, int? amountCents}) {
     return Invoice(
       id: id,
       jobId: jobId,

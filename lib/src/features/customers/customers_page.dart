@@ -28,10 +28,13 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
           for (final j in jobs) {
             map[j.customerName] = j.address;
           }
-          final customers = map.entries
-              .where((e) => e.key.toLowerCase().contains(query.toLowerCase()))
-              .toList()
-            ..sort((a, b) => a.key.compareTo(b.key));
+          final customers =
+              map.entries
+                  .where(
+                    (e) => e.key.toLowerCase().contains(query.toLowerCase()),
+                  )
+                  .toList()
+                ..sort((a, b) => a.key.compareTo(b.key));
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -44,7 +47,10 @@ class _CustomersPageState extends ConsumerState<CustomersPage> {
                 onChanged: (v) => setState(() => query = v),
               ),
               const SizedBox(height: 12),
-              Text('Customers (${customers.length})', style: Theme.of(context).textTheme.titleMedium),
+              Text(
+                'Customers (${customers.length})',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
               const SizedBox(height: 8),
               if (customers.isEmpty)
                 const Card(child: ListTile(title: Text('No customers yet')))

@@ -43,11 +43,27 @@ class DashboardPage extends ConsumerWidget {
         error: (e, _) => Center(child: Text('Failed to load dashboard: $e')),
         data: (jobs) {
           final total = jobs.length;
-          final scheduled = jobs.where((j) => j.status == JobStatus.scheduled.value).length;
-          final inProgress = jobs.where((j) => j.status == JobStatus.inProgress.value).length;
-          final done = jobs.where((j) => j.status == JobStatus.done.value).length;
-          final unassigned = jobs.where((j) => (j.technicianName ?? '').trim().isEmpty).length;
+          final scheduled = jobs
+              .where((j) => j.status == JobStatus.scheduled.value)
+              .length;
+          final inProgress = jobs
+              .where((j) => j.status == JobStatus.inProgress.value)
+              .length;
+          final done = jobs
+              .where((j) => j.status == JobStatus.done.value)
+              .length;
+          final unassigned = jobs
+              .where((j) => (j.technicianName ?? '').trim().isEmpty)
+              .length;
           final urgent = jobs.where((j) => j.priority == 'urgent').length;
+          final needsEta = jobs
+              .where(
+                (j) =>
+                    (j.technicianName ?? '').trim().isNotEmpty &&
+                    (j.etaWindow ?? '').trim().isEmpty &&
+                    j.status != JobStatus.done.value,
+              )
+              .length;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -63,12 +79,97 @@ class DashboardPage extends ConsumerWidget {
                 children: [
                   _MetricCard(label: 'Total', value: total.toString()),
                   _MetricCard(label: 'Scheduled', value: scheduled.toString()),
-                  _MetricCard(label: 'In Progress', value: inProgress.toString()),
+                  _MetricCard(
+                    label: 'In Progress',
+                    value: inProgress.toString(),
+                  ),
                   _MetricCard(label: 'Done', value: done.toString()),
-                  _MetricCard(label: 'Unassigned', value: unassigned.toString()),
+                  _MetricCard(
+                    label: 'Unassigned',
+                    value: unassigned.toString(),
+                  ),
                   _MetricCard(label: 'Urgent', value: urgent.toString()),
                 ],
               ),
+              const SizedBox(height: 16),
+              Text(
+                'Quick actions',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => context.go('/jobs'),
+                    icon: const Icon(Icons.add),
+                    label: const Text('New Job'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/dispatch'),
+                    icon: const Icon(Icons.alt_route),
+                    label: const Text('Dispatch Board'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => context.go('/invoices'),
+                    icon: const Icon(Icons.receipt_long_outlined),
+                    label: const Text('Invoices'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Needs attention',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              if (unassigned > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.warning_amber_rounded),
+                    title: Text('$unassigned unassigned jobs'),
+                    subtitle: const Text('Assign techs to keep jobs moving.'),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
+              if (urgent > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.priority_high_rounded),
+                    title: Text('$urgent urgent jobs'),
+                    subtitle: const Text('Review urgent queue first.'),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
+              if (needsEta > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.schedule_send_rounded),
+                    title: Text('$needsEta assigned jobs missing ETA'),
+                    subtitle: const Text(
+                      'Set ETA to reduce customer uncertainty.',
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
+              if (unassigned == 0 && urgent == 0 && needsEta == 0)
+                const Card(
+                  child: ListTile(
+                    leading: Icon(Icons.check_circle_outline),
+                    title: Text('Everything looks healthy'),
+                    subtitle: Text('No urgent dispatch blockers right now.'),
+                  ),
+                ),
             ],
           );
         },
