@@ -6,6 +6,7 @@ class Job {
     required this.jobType,
     required this.status,
     required this.priority,
+    this.createdAt,
     this.notes,
     this.technicianName,
     this.etaWindow,
@@ -23,6 +24,7 @@ class Job {
   final String jobType;
   final String status;
   final String priority;
+  final DateTime? createdAt;
   final String? notes;
   final String? technicianName;
   final String? etaWindow;
@@ -42,6 +44,9 @@ class Job {
       jobType: (map['job_type'] ?? map['jobType'] ?? '').toString(),
       status: (map['status'] ?? 'new').toString(),
       priority: (map['priority'] ?? 'normal').toString(),
+      createdAt: DateTime.tryParse(
+        (map['created_at'] ?? map['createdAt'] ?? '').toString(),
+      ),
       notes: map['notes']?.toString(),
       technicianName: map['technician_name']?.toString(),
       etaWindow: map['eta_window']?.toString(),
@@ -79,6 +84,7 @@ class Job {
       'job_type': jobType,
       'status': status,
       'priority': priority,
+      'created_at': createdAt?.toIso8601String(),
       'notes': notes,
       'technician_name': technicianName,
       'eta_window': etaWindow,
@@ -97,6 +103,7 @@ class Job {
     String? jobType,
     String? status,
     String? priority,
+    DateTime? createdAt,
     String? notes,
     String? technicianName,
     String? etaWindow,
@@ -114,6 +121,7 @@ class Job {
       jobType: jobType ?? this.jobType,
       status: status ?? this.status,
       priority: priority ?? this.priority,
+      createdAt: createdAt ?? this.createdAt,
       notes: notes ?? this.notes,
       technicianName: technicianName ?? this.technicianName,
       etaWindow: etaWindow ?? this.etaWindow,

@@ -30,6 +30,7 @@ class InMemoryJobsRepository implements JobsRepository {
       jobType: jobType,
       status: JobStatus.newJob.value,
       priority: priority,
+      createdAt: DateTime.now(),
       notes: notes,
       technicianName: technicianName,
       etaWindow: etaWindow,

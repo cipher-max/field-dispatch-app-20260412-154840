@@ -12,6 +12,7 @@ List<Job> filterDispatchJobs({
   bool needsCustomerUpdateOnly = false,
   bool needsScopeNotesOnly = false,
   bool needsConfirmationOnly = false,
+  bool needsAgingOnly = false,
 }) {
   final normalized = query.trim().toLowerCase();
 
@@ -43,6 +44,7 @@ List<Job> filterDispatchJobs({
         !needsScopeNotesOnly || jobNeedsScopeNotes(job);
     final matchesNeedsConfirmation =
         !needsConfirmationOnly || jobNeedsConfirmation(job);
+    final matchesAging = !needsAgingOnly || jobIsAgingRisk(job);
 
     return matchesQuery &&
         matchesPriority &&
@@ -52,7 +54,8 @@ List<Job> filterDispatchJobs({
         matchesNeedsAction &&
         matchesNeedsCustomerUpdate &&
         matchesNeedsScopeNotes &&
-        matchesNeedsConfirmation;
+        matchesNeedsConfirmation &&
+        matchesAging;
   }).toList();
 }
 
@@ -65,6 +68,14 @@ bool jobNeedsConfirmation(Job job) {
   if (job.status != 'scheduled') return false;
   if ((job.etaWindow ?? '').trim().isEmpty) return false;
   return job.customerConfirmedAt == null;
+}
+
+bool jobIsAgingRisk(Job job, {DateTime? now}) {
+  if (job.status == 'done') return false;
+  final created = job.createdAt;
+  if (created == null) return false;
+  final effectiveNow = now ?? DateTime.now();
+  return effectiveNow.difference(created).inDays >= 2;
 }
 
 bool jobNeedsCustomerUpdate(Job job) {

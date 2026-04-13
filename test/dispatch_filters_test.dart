@@ -235,4 +235,44 @@ void main() {
       isFalse,
     );
   });
+
+  test('filters aging jobs 2+ days old', () {
+    final now = DateTime(2026, 4, 13, 15);
+    final aging = jobs[1].copyWith(
+      createdAt: now.subtract(const Duration(days: 3)),
+    );
+    final fresh = jobs[2].copyWith(
+      createdAt: now.subtract(const Duration(hours: 12)),
+    );
+
+    final result = filterDispatchJobs(
+      jobs: [aging, fresh],
+      query: '',
+      needsAgingOnly: true,
+    );
+
+    expect(result.map((j) => j.id), ['2']);
+  });
+
+  test('jobIsAgingRisk ignores done and missing-created jobs', () {
+    final now = DateTime(2026, 4, 13, 15);
+    expect(
+      jobIsAgingRisk(
+        jobs[1].copyWith(createdAt: now.subtract(const Duration(days: 4))),
+        now: now,
+      ),
+      isTrue,
+    );
+    expect(
+      jobIsAgingRisk(
+        jobs[1].copyWith(
+          status: 'done',
+          createdAt: now.subtract(const Duration(days: 4)),
+        ),
+        now: now,
+      ),
+      isFalse,
+    );
+    expect(jobIsAgingRisk(jobs[1], now: now), isFalse);
+  });
 }

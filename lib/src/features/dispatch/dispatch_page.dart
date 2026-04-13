@@ -40,6 +40,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
   bool needsCustomerUpdateOnly = false;
   bool needsScopeNotesOnly = false;
   bool needsConfirmationOnly = false;
+  bool needsAgingOnly = false;
 
   Color _priorityColor(BuildContext context, String priority) {
     switch (priority) {
@@ -98,6 +99,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
             needsCustomerUpdateOnly: needsCustomerUpdateOnly,
             needsScopeNotesOnly: needsScopeNotesOnly,
             needsConfirmationOnly: needsConfirmationOnly,
+            needsAgingOnly: needsAgingOnly,
           );
           final recentTechnicians = buildRecentTechnicianNames(jobs);
           final unassignedOpenCount = jobs
@@ -117,6 +119,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
           final needsConfirmationCount = jobs
               .where(jobNeedsConfirmation)
               .length;
+          final agingRiskCount = jobs.where(jobIsAgingRisk).length;
 
           return RefreshIndicator(
             onRefresh: () =>
@@ -284,6 +287,25 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                   ),
                   const SizedBox(height: 8),
                 ],
+                if (agingRiskCount > 0) ...[
+                  Card(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.timer_off_outlined),
+                      title: Text(
+                        '$agingRiskCount open job${agingRiskCount == 1 ? '' : 's'} aging 2+ days',
+                      ),
+                      subtitle: const Text(
+                        'Aging jobs can slip through the cracks and hurt conversion.',
+                      ),
+                      trailing: TextButton(
+                        onPressed: () => setState(() => needsAgingOnly = true),
+                        child: const Text('Filter'),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                ],
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
@@ -351,6 +373,12 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                       selected: needsConfirmationOnly,
                       onSelected: (selected) =>
                           setState(() => needsConfirmationOnly = selected),
+                    ),
+                    FilterChip(
+                      label: const Text('Aging 2+ days'),
+                      selected: needsAgingOnly,
+                      onSelected: (selected) =>
+                          setState(() => needsAgingOnly = selected),
                     ),
                   ],
                 ),

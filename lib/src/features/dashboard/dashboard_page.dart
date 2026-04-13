@@ -83,6 +83,7 @@ class DashboardPage extends ConsumerWidget {
           final needsCustomerUpdate = jobs.where(jobNeedsCustomerUpdate).length;
           final needsScopeNotes = jobs.where(jobNeedsScopeNotes).length;
           final needsConfirmation = jobs.where(jobNeedsConfirmation).length;
+          final agingRisk = jobs.where(jobIsAgingRisk).length;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -132,6 +133,7 @@ class DashboardPage extends ConsumerWidget {
                     label: 'Unconfirmed',
                     value: needsConfirmation.toString(),
                   ),
+                  _MetricCard(label: 'Aging Jobs', value: agingRisk.toString()),
                 ],
               ),
               const SizedBox(height: 16),
@@ -281,6 +283,20 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
+              if (agingRisk > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.timer_off_outlined),
+                    title: Text('$agingRisk open jobs are aging 2+ days'),
+                    subtitle: const Text(
+                      'Older open jobs often signal stalled follow-up or scheduling risk.',
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
               if (unassigned == 0 &&
                   urgent == 0 &&
                   needsEta == 0 &&
@@ -288,7 +304,8 @@ class DashboardPage extends ConsumerWidget {
                   pendingSync == 0 &&
                   needsCustomerUpdate == 0 &&
                   needsScopeNotes == 0 &&
-                  needsConfirmation == 0)
+                  needsConfirmation == 0 &&
+                  agingRisk == 0)
                 const Card(
                   child: ListTile(
                     leading: Icon(Icons.check_circle_outline),
