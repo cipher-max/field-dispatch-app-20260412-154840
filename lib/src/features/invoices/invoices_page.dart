@@ -10,6 +10,7 @@ import '../jobs/domain/job_status.dart';
 import '../jobs/job_provider.dart';
 import 'invoice_provider.dart';
 import 'quickbooks_export_service.dart';
+import 'invoice_collection_rules.dart';
 import 'stripe_payment_link_service.dart';
 
 class InvoicesPage extends ConsumerWidget {
@@ -45,6 +46,9 @@ class InvoicesPage extends ConsumerWidget {
               .where((i) => i.documentType == 'invoice')
               .fold<int>(0, (sum, i) => sum + i.amountPaidCents);
           final totalOutstanding = totalInvoiced - totalPaid;
+          final collectionQueue =
+              invoices.where(invoiceNeedsCollectionFollowUp).toList()
+                ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -90,6 +94,37 @@ class InvoicesPage extends ConsumerWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 20),
+              Text(
+                'Collection follow-up',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 8),
+              if (collectionQueue.isEmpty)
+                const Card(
+                  child: ListTile(
+                    leading: Icon(Icons.check_circle_outline),
+                    title: Text('No overdue invoice follow-ups right now'),
+                  ),
+                )
+              else
+                ...collectionQueue.map(
+                  (inv) => Card(
+                    color: Theme.of(context).colorScheme.errorContainer,
+                    child: ListTile(
+                      leading: const Icon(Icons.warning_amber_outlined),
+                      title: Text(inv.customerName),
+                      subtitle: Text(
+                        'Due: ${_usd(inv.amountDueCents)} • Age: ${invoiceAgeDays(inv)}d • Status: ${inv.status.toUpperCase()}',
+                      ),
+                      trailing: FilledButton.tonalIcon(
+                        onPressed: () => _copyCollectionReminder(context, inv),
+                        icon: const Icon(Icons.content_copy_outlined),
+                        label: const Text('Copy reminder'),
+                      ),
+                    ),
+                  ),
+                ),
               const SizedBox(height: 20),
               Text(
                 'Create estimate from active jobs',
@@ -457,6 +492,19 @@ class InvoicesPage extends ConsumerWidget {
     messenger.showSnackBar(
       const SnackBar(content: Text('QuickBooks CSV exported to share sheet')),
     );
+  }
+
+  Future<void> _copyCollectionReminder(
+    BuildContext context,
+    Invoice invoice,
+  ) async {
+    final message =
+        'Hi ${invoice.customerName}, this is a quick reminder that invoice ${invoice.id} has an outstanding balance of ${_usd(invoice.amountDueCents)}. Please let us know if you need the payment link re-sent. Thanks!';
+    await Clipboard.setData(ClipboardData(text: message));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Reminder message copied')));
   }
 }
 
