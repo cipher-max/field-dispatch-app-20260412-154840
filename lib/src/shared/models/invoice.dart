@@ -4,16 +4,25 @@ class Invoice {
     required this.jobId,
     required this.customerName,
     required this.amountCents,
+    this.amountPaidCents = 0,
+    this.documentType = 'invoice',
     required this.status,
     required this.createdAt,
+    this.updatedAt,
   });
 
   final String id;
   final String jobId;
   final String customerName;
   final int amountCents;
-  final String status; // draft, sent, paid
+  final int amountPaidCents;
+  final String documentType; // estimate, invoice
+  final String status; // draft, sent, approved, declined, partial, paid
   final DateTime createdAt;
+  final DateTime? updatedAt;
+
+  int get amountDueCents =>
+      (amountCents - amountPaidCents).clamp(0, amountCents);
 
   factory Invoice.fromMap(Map<String, dynamic> map) {
     return Invoice(
@@ -22,12 +31,19 @@ class Invoice {
       customerName: (map['customer_name'] ?? map['customerName'] ?? '')
           .toString(),
       amountCents: (map['amount_cents'] ?? map['amountCents'] ?? 0) as int,
+      amountPaidCents:
+          (map['amount_paid_cents'] ?? map['amountPaidCents'] ?? 0) as int,
+      documentType: (map['document_type'] ?? map['documentType'] ?? 'invoice')
+          .toString(),
       status: (map['status'] ?? 'draft').toString(),
       createdAt:
           DateTime.tryParse(
             (map['created_at'] ?? map['createdAt'] ?? '').toString(),
           ) ??
           DateTime.now(),
+      updatedAt: DateTime.tryParse(
+        (map['updated_at'] ?? map['updatedAt'] ?? '').toString(),
+      ),
     );
   }
 
@@ -37,19 +53,31 @@ class Invoice {
       'job_id': jobId,
       'customer_name': customerName,
       'amount_cents': amountCents,
+      'amount_paid_cents': amountPaidCents,
+      'document_type': documentType,
       'status': status,
       'created_at': createdAt.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
-  Invoice copyWith({String? status, int? amountCents}) {
+  Invoice copyWith({
+    String? status,
+    int? amountCents,
+    int? amountPaidCents,
+    String? documentType,
+    DateTime? updatedAt,
+  }) {
     return Invoice(
       id: id,
       jobId: jobId,
       customerName: customerName,
       amountCents: amountCents ?? this.amountCents,
+      amountPaidCents: amountPaidCents ?? this.amountPaidCents,
+      documentType: documentType ?? this.documentType,
       status: status ?? this.status,
       createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
     );
   }
 }

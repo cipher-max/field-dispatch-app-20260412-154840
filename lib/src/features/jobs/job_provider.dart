@@ -36,6 +36,13 @@ class JobsPendingActionsCountNotifier extends Notifier<int> {
   void set(int value) => state = value;
 }
 
+class JobsPendingActionJobIdsNotifier extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => <String>{};
+
+  void set(Set<String> value) => state = value;
+}
+
 final jobsSyncInProgressProvider =
     NotifierProvider<JobsSyncInProgressNotifier, bool>(
       JobsSyncInProgressNotifier.new,
@@ -50,6 +57,10 @@ final jobsSyncErrorProvider = NotifierProvider<JobsSyncErrorNotifier, String?>(
 final jobsPendingActionsCountProvider =
     NotifierProvider<JobsPendingActionsCountNotifier, int>(
       JobsPendingActionsCountNotifier.new,
+    );
+final jobsPendingActionJobIdsProvider =
+    NotifierProvider<JobsPendingActionJobIdsNotifier, Set<String>>(
+      JobsPendingActionJobIdsNotifier.new,
     );
 
 class JobsNotifier extends AsyncNotifier<List<Job>> {
@@ -377,6 +388,11 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<void> _syncPendingCount() async {
     final pending = await _readPendingActions();
     ref.read(jobsPendingActionsCountProvider.notifier).state = pending.length;
+    final pendingJobIds = pending
+        .map((a) => (a['jobId'] ?? '').toString())
+        .where((id) => id.isNotEmpty)
+        .toSet();
+    ref.read(jobsPendingActionJobIdsProvider.notifier).state = pendingJobIds;
   }
 }
 

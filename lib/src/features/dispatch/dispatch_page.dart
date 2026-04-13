@@ -76,6 +76,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
     final lastSyncAt = ref.watch(jobsLastSyncAtProvider);
     final syncError = ref.watch(jobsSyncErrorProvider);
     final pendingCount = ref.watch(jobsPendingActionsCountProvider);
+    final pendingJobIds = ref.watch(jobsPendingActionJobIdsProvider);
 
     return ShellScaffold(
       title: 'Dispatch',
@@ -344,6 +345,19 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                                           'Photos: ${job.proofPhotoCount ?? job.proofPhotoUrls?.length}',
                                         ),
                                       ),
+                                    Chip(
+                                      avatar: Icon(
+                                        pendingJobIds.contains(job.id)
+                                            ? Icons.sync_problem_outlined
+                                            : Icons.cloud_done_outlined,
+                                        size: 16,
+                                      ),
+                                      label: Text(
+                                        pendingJobIds.contains(job.id)
+                                            ? 'Pending sync'
+                                            : 'Synced',
+                                      ),
+                                    ),
                                   ],
                                 ),
                                 if ((job.completionNotes ?? '')
@@ -384,6 +398,42 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                                       ),
                                       icon: const Icon(Icons.sms_outlined),
                                       label: const Text('Update'),
+                                    ),
+                                    PopupMenuButton<DispatchMessageTemplate>(
+                                      tooltip: 'Quick customer templates',
+                                      onSelected: (template) =>
+                                          _copyTemplateUpdate(
+                                            context,
+                                            ref,
+                                            job,
+                                            template,
+                                          ),
+                                      itemBuilder: (_) => const [
+                                        PopupMenuItem(
+                                          value:
+                                              DispatchMessageTemplate.scheduled,
+                                          child: Text('Copy: Scheduled'),
+                                        ),
+                                        PopupMenuItem(
+                                          value:
+                                              DispatchMessageTemplate.onTheWay,
+                                          child: Text('Copy: On my way'),
+                                        ),
+                                        PopupMenuItem(
+                                          value:
+                                              DispatchMessageTemplate.delayed,
+                                          child: Text('Copy: Delayed'),
+                                        ),
+                                        PopupMenuItem(
+                                          value:
+                                              DispatchMessageTemplate.completed,
+                                          child: Text('Copy: Completed'),
+                                        ),
+                                      ],
+                                      child: const Chip(
+                                        avatar: Icon(Icons.forum_outlined),
+                                        label: Text('Notify'),
+                                      ),
                                     ),
                                     FilledButton.tonalIcon(
                                       onPressed: () =>
@@ -447,6 +497,21 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
           );
         },
       ),
+    );
+  }
+
+  Future<void> _copyTemplateUpdate(
+    BuildContext context,
+    WidgetRef ref,
+    Job job,
+    DispatchMessageTemplate template,
+  ) async {
+    final message = buildCustomerUpdateTemplateMessage(job, template);
+    await Clipboard.setData(ClipboardData(text: message));
+    await ref.read(jobsProvider.notifier).markCustomerUpdateSent(job.id);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Customer template copied to clipboard')),
     );
   }
 

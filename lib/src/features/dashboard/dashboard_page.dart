@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/trades/trade_provider.dart';
 import '../../core/trades/trade_type.dart';
 import '../../shared/widgets/shell_scaffold.dart';
+import '../invoices/invoice_provider.dart';
 import '../jobs/domain/job_status.dart';
 import '../jobs/job_provider.dart';
 
@@ -35,6 +36,8 @@ class DashboardPage extends ConsumerWidget {
     }
 
     final jobsAsync = ref.watch(jobsProvider);
+    final invoicesAsync = ref.watch(invoiceProvider);
+    final pendingSync = ref.watch(jobsPendingActionsCountProvider);
 
     return ShellScaffold(
       title: 'Dashboard',
@@ -42,6 +45,7 @@ class DashboardPage extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (e, _) => Center(child: Text('Failed to load dashboard: $e')),
         data: (jobs) {
+          final invoices = invoicesAsync.asData?.value ?? [];
           final total = jobs.length;
           final scheduled = jobs
               .where((j) => j.status == JobStatus.scheduled.value)
@@ -62,6 +66,17 @@ class DashboardPage extends ConsumerWidget {
                     (j.technicianName ?? '').trim().isNotEmpty &&
                     (j.etaWindow ?? '').trim().isEmpty &&
                     j.status != JobStatus.done.value,
+              )
+              .length;
+          final paidCents = invoices
+              .where((i) => i.documentType == 'invoice')
+              .fold<int>(0, (sum, i) => sum + i.amountPaidCents);
+          final outstandingCents = invoices
+              .where((i) => i.documentType == 'invoice')
+              .fold<int>(0, (sum, i) => sum + i.amountDueCents);
+          final invoicesPartial = invoices
+              .where(
+                (i) => i.documentType == 'invoice' && i.status == 'partial',
               )
               .length;
 
@@ -89,6 +104,18 @@ class DashboardPage extends ConsumerWidget {
                     value: unassigned.toString(),
                   ),
                   _MetricCard(label: 'Urgent', value: urgent.toString()),
+                  _MetricCard(
+                    label: 'Outstanding',
+                    value: '\$${(outstandingCents / 100).toStringAsFixed(0)}',
+                  ),
+                  _MetricCard(
+                    label: 'Paid',
+                    value: '\$${(paidCents / 100).toStringAsFixed(0)}',
+                  ),
+                  _MetricCard(
+                    label: 'Pending Sync',
+                    value: pendingSync.toString(),
+                  ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -162,7 +189,39 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                 ),
-              if (unassigned == 0 && urgent == 0 && needsEta == 0)
+              if (invoicesPartial > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.request_quote_outlined),
+                    title: Text('$invoicesPartial invoices partially paid'),
+                    subtitle: const Text(
+                      'Follow up to close outstanding balances.',
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/invoices'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
+              if (pendingSync > 0)
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.sync_problem_outlined),
+                    title: Text('$pendingSync local changes pending sync'),
+                    subtitle: const Text(
+                      'Retry sync from Dispatch to clear queue.',
+                    ),
+                    trailing: TextButton(
+                      onPressed: () => context.go('/dispatch'),
+                      child: const Text('Open'),
+                    ),
+                  ),
+                ),
+              if (unassigned == 0 &&
+                  urgent == 0 &&
+                  needsEta == 0 &&
+                  invoicesPartial == 0 &&
+                  pendingSync == 0)
                 const Card(
                   child: ListTile(
                     leading: Icon(Icons.check_circle_outline),

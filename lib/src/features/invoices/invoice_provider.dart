@@ -35,10 +35,40 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
       jobId: jobId,
       customerName: customerName,
       amountCents: amountCents,
+      amountPaidCents: 0,
+      documentType: 'invoice',
       status: 'draft',
       createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
     );
     final next = [invoice, ...current];
+    state = AsyncData(next);
+    await _write(next);
+  }
+
+  Future<void> createEstimate({
+    required String jobId,
+    required String customerName,
+    required int amountCents,
+  }) async {
+    final current = state.asData?.value ?? [];
+    final alreadyExists = current.any((i) => i.jobId == jobId);
+    if (alreadyExists) {
+      throw StateError('A document already exists for this job.');
+    }
+
+    final estimate = Invoice(
+      id: _uuid.v4(),
+      jobId: jobId,
+      customerName: customerName,
+      amountCents: amountCents,
+      amountPaidCents: 0,
+      documentType: 'estimate',
+      status: 'sent',
+      createdAt: DateTime.now(),
+      updatedAt: DateTime.now(),
+    );
+    final next = [estimate, ...current];
     state = AsyncData(next);
     await _write(next);
   }
@@ -47,7 +77,54 @@ class InvoiceNotifier extends AsyncNotifier<List<Invoice>> {
     final current = state.asData?.value ?? [];
     final next = [
       for (final i in current)
-        if (i.id == invoiceId) i.copyWith(status: status) else i,
+        if (i.id == invoiceId)
+          i.copyWith(status: status, updatedAt: DateTime.now())
+        else
+          i,
+    ];
+    state = AsyncData(next);
+    await _write(next);
+  }
+
+  Future<void> recordPayment({
+    required String invoiceId,
+    required int paymentCents,
+  }) async {
+    final current = state.asData?.value ?? [];
+    final next = [
+      for (final i in current)
+        if (i.id == invoiceId)
+          () {
+            final paid = (i.amountPaidCents + paymentCents).clamp(
+              0,
+              i.amountCents,
+            );
+            final status = paid >= i.amountCents ? 'paid' : 'partial';
+            return i.copyWith(
+              amountPaidCents: paid,
+              status: status,
+              updatedAt: DateTime.now(),
+            );
+          }()
+        else
+          i,
+    ];
+    state = AsyncData(next);
+    await _write(next);
+  }
+
+  Future<void> convertEstimateToInvoice(String invoiceId) async {
+    final current = state.asData?.value ?? [];
+    final next = [
+      for (final i in current)
+        if (i.id == invoiceId)
+          i.copyWith(
+            documentType: 'invoice',
+            status: 'draft',
+            updatedAt: DateTime.now(),
+          )
+        else
+          i,
     ];
     state = AsyncData(next);
     await _write(next);
